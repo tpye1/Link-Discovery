@@ -1,0 +1,69 @@
+#App {
+  color: black;
+}
+
+/* ONE shared width container */
+.panel-container {
+  max-width: 720px;
+  margin: 32px auto;
+}
+
+/* shared boxed look */
+.boxed {
+  border: 1px solid #d0d0d0;
+  border-radius: 8px;
+  padding: 12px 18px;
+  background: #fff;
+}
+
+/* real gap control */
+.boxed + .boxed {
+  margin-top: 4px;
+}
+
+/* shared label width */
+:root {
+  --label-width: 170px;
+}
+
+/* Selection grid */
+.selection-grid {
+  display: grid;
+  grid-template-columns: var(--label-width) 1fr;
+  row-gap: 6px;
+  column-gap: 12px;
+  align-items: center;
+}
+
+/* Results grid */
+.results-grid {
+  display: grid;
+  grid-template-columns:
+    var(--label-width) 1fr
+    var(--label-width) 1fr;
+  row-gap: 6px;
+  column-gap: 16px;
+  align-items: center;
+}
+
+/* labels */
+.selection-grid label,
+.results-grid label {
+  text-align: right;
+  font-weight: 500;
+}
+
+/* titles */
+.box-title {
+  margin: 0 0 8px 0;
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+
+/* buttons */
+.button-row {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 12px;
+}
