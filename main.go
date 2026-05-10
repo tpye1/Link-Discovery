@@ -75,6 +75,7 @@ func main() {
 
 // Require sudo privilages
 
+
 func get_lldp(lldp_layer gopacket.Layer, connection *connect_struct) link_data {
 
 	var lldp_link_data link_data = link_data{
