@@ -44,6 +44,8 @@ type link_data struct {
 	duplex_option   string
 	vpt_mgmt_domain string
 	protocol        string
+	//stacked			bool
+	//member			int
 }
 
 //go:embed all:frontend/dist
@@ -97,7 +99,7 @@ func get_lldp(lldp_layer gopacket.Layer, connection *connect_struct) link_data {
 			lldp_link_data.switch_name = string(v.Value)
 		case layers.LLDPTLVSysDescription:
 			lldp_link_data.switch_model = string(v.Value)
-		case layers.LLDPTLVPortDescription:
+		case layers.LLDPTLVPortID:
 			lldp_link_data.port_id = string(v.Value)
 		case layers.LLDPTLVMgmtAddress:
 			if len(v.Value) < 6 {
