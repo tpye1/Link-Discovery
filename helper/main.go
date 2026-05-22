@@ -93,9 +93,17 @@ func admin_helper(device string)  {
 
 func get_lldp(lldp_layer gopacket.Layer) LinkDataHelperForPackets {
 
-	var lldp_link_data LinkDataHelperForPackets
+	var lldp_link_data = LinkDataHelperForPackets{
+		"",
+		"",
+		"",
+		"",
+		"",
+		"",
+		"",
+		"LLDP",
+	}
 
-	lldp_link_data.Protocol = "LLDP"
 
 	lldp := lldp_layer.(*layers.LinkLayerDiscovery)
 	for _, v := range lldp.Values {
@@ -122,8 +130,16 @@ func get_lldp(lldp_layer gopacket.Layer) LinkDataHelperForPackets {
 
 func get_cdp(cdp_layer gopacket.Layer) LinkDataHelperForPackets {
 
-	var cdp_link_data LinkDataHelperForPackets
-	cdp_link_data.Protocol = "CDP"
+	var cdp_link_data = LinkDataHelperForPackets{
+		"",
+		"",
+		"",
+		"",
+		"",
+		"",
+		"",
+		"CDP",
+	}
 
 
 	cdp := cdp_layer.(*layers.CiscoDiscovery)

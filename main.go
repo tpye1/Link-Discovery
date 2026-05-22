@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"embed"
+	"encoding/json"
 	"fmt"
 	"log"
 	"net"
@@ -13,7 +14,6 @@ import (
 	"github.com/wailsapp/wails/v2"
 	"github.com/wailsapp/wails/v2/pkg/options"
 	"github.com/wailsapp/wails/v2/pkg/options/assetserver"
-
 )
 
 type connect_struct struct {
@@ -31,6 +31,18 @@ var port_duplex = [3]string{"Full", "Half", "<nil>"}
 type valid_iface struct {
 	iface      net.Interface
 	is_running bool
+}
+
+
+type LinkDataHelperForPackets struct {
+	SwitchName    string `json:"switch_name"`
+	PortID        string `json:"port_id"`
+	VlanID        string `json:"vlan_id"`
+	SwitchIP      string `json:"switch_ip"`
+	SwitchModel   string `json:"switch_model"`
+	DuplexOption  string `json:"duplex_option"`
+	VptMgmtDomain string `json:"vpt_mgmt_domain"`
+	Protocol      string `json:"protocol"`
 }
 
 type link_data struct {
@@ -98,6 +110,8 @@ func windows_pcap_translate(iface *net.Interface) (string, error) {
 func get_link_data(connection *connect_struct) link_data {
 
 
+	var link link_data
+
 	home := os.Getenv("HOME")
 
 	cmd := exec.Command(
@@ -117,12 +131,29 @@ func get_link_data(connection *connect_struct) link_data {
 
 	scanner := bufio.NewScanner(stdout)
 
+	var line string 
 	for scanner.Scan() {
-		line := scanner.Text()
-		fmt.Println(line)
+		line = scanner.Text()
+
+		var result LinkDataHelperForPackets
+
+		err := json.Unmarshal([]byte(line), &result)
+	
+		if err != nil {
+			continue
+		}
+
+		link.connection = connection
+		link.switch_name = result.SwitchName
+		link.switch_model = result.SwitchModel
+		link.port_id = result.PortID
+		link.switch_ip = result.SwitchIP
+		link.vlan_id = result.VlanID
+		link.vpt_mgmt_domain = result.VptMgmtDomain
+		link.duplex_option = result.DuplexOption
+		link.protocol = result.Protocol
+
 	}
-
-
 	// Obsolete for now trying to get it to work for Linux
 	/*
 	if runtime.GOOS == "windows" {
@@ -134,7 +165,8 @@ func get_link_data(connection *connect_struct) link_data {
 		device = connection.network_card
 	}
 	*/
-	return link_data{}
+
+	return link
 }
 
 // Excludes wireless for Windows and Linux however I mean its not like wireless works for switches anyway
