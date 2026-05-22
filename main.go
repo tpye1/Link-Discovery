@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/exec"
 	"strings"
+	"runtime"
 
 	"github.com/wailsapp/wails/v2"
 	"github.com/wailsapp/wails/v2/pkg/options"
@@ -86,38 +87,25 @@ func main() {
 	}
 }
 
-// This is obsolete for now since I need to get this root working on Linux.
-/*
-func windows_pcap_translate(iface *net.Interface) (string, error) {
-
-	// Find all devices
-	devs, err := pcap.FindAllDevs()
-	if err != nil {
-		return "", err
-	}
-
-	for _, device := range devs {
-		if strings.Contains(strings.ToLower(device.Description),
-			strings.ToLower(iface.Name),
-		) {
-			return device.Name, nil
-		}
-
-	}
-	return "", fmt.Errorf("No pcap device found!")
-}
-*/
 func get_link_data(connection *connect_struct) link_data {
 
-
 	var link link_data
+
+	var device_argument string
+
+	if runtime.GOOS == "windows" {
+		device_argument = "[windows], " + "{" + (*(*connection).iface).Name + "}" 
+	} else {
+		device_argument = (*(*connection).iface).Name
+	}
+
 
 	home := os.Getenv("HOME")
 
 	cmd := exec.Command(
 		"pkexec",
 		home + "/personal/ldlinux/helper/helper",
-		(*(*connection).iface).Name,
+		device_argument,
 	)
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
@@ -154,17 +142,7 @@ func get_link_data(connection *connect_struct) link_data {
 		link.protocol = result.Protocol
 
 	}
-	// Obsolete for now trying to get it to work for Linux
-	/*
-	if runtime.GOOS == "windows" {
-		device, err := windows_pcap_translate((*connection).iface)
-		if err != nil {
-			log.Fatal(err)
-		}
-	} else {
-		device = connection.network_card
-	}
-	*/
+
 
 	return link
 }

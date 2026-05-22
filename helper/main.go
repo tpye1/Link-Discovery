@@ -6,6 +6,7 @@ import (
 	"log"
 	"net"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/google/gopacket"
@@ -29,8 +30,45 @@ func main() {
 		log.Fatal("No Arguments please add your interface")
 	}
 
-	device := os.Args[1]
-	admin_helper(device)
+	device_args := os.Args[1]
+	if strings.Contains(device_args ,"[windows]") && (strings.Contains(device_args, "{") && strings.Contains(device_args, "}")) {
+		start := strings.Index(device_args, "{")
+		end := strings.Index(device_args, "}")
+
+		if start != -1 && end != -1 && end > start {
+			result := device_args[start : end+1]
+			device, err := windows_pcap_translate(result)
+			if err != nil {
+				log.Fatal("Failed to retrieve device name for the Windows device")
+			}
+			admin_helper(device)
+		} else {
+			log.Fatalln("Argument error, error regarding the network interface name")
+		}
+		 
+	} else {
+		admin_helper(device_args)
+	}
+}
+
+
+func windows_pcap_translate(iface_name string) (string, error) {
+
+	// Find all devices
+	devs, err := pcap.FindAllDevs()
+	if err != nil {
+		return "", err
+	}
+
+	for _, device := range devs {
+		if strings.Contains(strings.ToLower(device.Description),
+			strings.ToLower(iface_name),
+		) {
+			return device.Name, nil
+		}
+
+	}
+	return "", fmt.Errorf("No pcap device found!")
 }
 
 
@@ -38,6 +76,9 @@ func admin_helper(device string)  {
 
 	var err error
 	var handle *pcap.Handle
+	if device == "windows" {
+
+	}
 	// Ethernet Connection,
 	// Number of bytes taken from each packet 1600 is a sufficient number,
 	// promiscous will be enabled,
