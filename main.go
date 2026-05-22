@@ -93,20 +93,30 @@ func get_link_data(connection *connect_struct) link_data {
 
 	var device_argument string
 
+
+	var cmd *exec.Cmd
 	if runtime.GOOS == "windows" {
-		device_argument = "[windows], " + "{" + (*(*connection).iface).Name + "}" 
+		device_argument = "[windows], " + "{" + (*(*connection).iface).Name + "}"
+		/*
+		cmd = exec.Command(
+			"whoami",
+			"C:\Users\tom\Desktop\ldlinux\helper\helper.exe",
+			device_argument
+		)
+		*/
 	} else {
 		device_argument = (*(*connection).iface).Name
+		
+		home := os.Getenv("HOME")
+
+		cmd = exec.Command(
+			"pkexec",
+			home + "/personal/ldlinux/helper/helper",
+			device_argument,
+		)
 	}
 
 
-	home := os.Getenv("HOME")
-
-	cmd := exec.Command(
-		"pkexec",
-		home + "/personal/ldlinux/helper/helper",
-		device_argument,
-	)
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
 		log.Fatal("Pipe failed")
