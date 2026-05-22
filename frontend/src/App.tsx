@@ -67,7 +67,6 @@ const [results, setResults] = useState<main.LinkDataDTO | null>(null);
           <div className="button-row">
             <button
               onClick={handleGetLinkData}
-              disabled={!selected}
             >
               Get Link Data
             </button>

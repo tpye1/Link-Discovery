@@ -11,7 +11,7 @@ Here is Chris Hall's github thanks to him for this kind of idea [https://github.
 - For security only use this on an Admin device/user
 - On Linux you can use the command of:
 ```shell
-sudo setcap cap_net_raw+ep your-helper
+sudo setcap cap_net_raw=ep ./ldlinux
 ```
 - Or you can use
 ```shell
@@ -24,7 +24,7 @@ sudo ./ldlinux
 
 
 ### Contributors would be nice:
-- Is anyone is good a frontend and actually likes that cool.
+- Is anyone is good a frontend and actually likes frontend development that would be nice.
 
 #### Windows users:
 - If you are using Windows
@@ -36,7 +36,7 @@ sudo ./ldlinux
 ##### Regarding Ai use:
 - Ai was used since I used this project to learn Go and for the Gui in typescript, yeah I don't like typescript or frontend.
 - The Json nonsense in dto.go is Ai so yeah if bugs let me know as well as the frontend.
-
+- But just to clear things up a lot of the main.go wasn't Ai (only some) mainly just learning and these libaries are quite complicated i.e. the gopacket libaries
 
 # **IMPORTANT if there is a bug** 
 - If there is a bug please or even hopefully not a security hole or a problem please or feedback pleas email me ASAP but please but respectful and polite: 
