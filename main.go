@@ -27,8 +27,6 @@ type connect_struct struct {
 	iface        *net.Interface
 }
 
-var port_duplex = [3]string{"Full", "Half", "<nil>"}
-
 type valid_iface struct {
 	iface      net.Interface
 	is_running bool
