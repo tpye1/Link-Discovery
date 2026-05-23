@@ -28,7 +28,7 @@ type connect_struct struct {
 }
 
 type valid_iface struct {
-	iface      net.Interface
+	iface      *net.Interface
 	is_running bool
 }
 
@@ -178,7 +178,7 @@ func ethernet_checker(ifaces []net.Interface) []valid_iface {
 			len(v.HardwareAddr) > 0 &&
 			v.Flags&net.FlagLoopback == 0 &&
 			exclude_wireless(v) {
-			mock_valid.iface = v
+			mock_valid.iface = &v
 			if v.Flags&net.FlagRunning > 0 {
 				mock_valid.is_running = true
 				valid = append(valid, mock_valid)
@@ -271,7 +271,7 @@ func get_connection_data() []connect_struct {
 			info.status = true
 			// Return the structure
 		}
-		info.iface = &v.iface
+		info.iface = v.iface
 
 		connections = append(connections, info)
 		count++
