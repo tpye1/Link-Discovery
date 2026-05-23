@@ -95,14 +95,7 @@ func get_link_data(connection *connect_struct) link_data {
 	var cmd *exec.Cmd
 	if runtime.GOOS == "windows" {
 		device_argument = "[windows], " + "{" + (*(*connection).iface).Name + "}"
-		/*
-		cmd = exec.Command(
-			"whoami",
-			"C:\Users\tom\Desktop\ldlinux\helper\helper.exe",
-			device_argument
-		)
-		*/
-	} else {
+		} else {
 		device_argument = (*(*connection).iface).Name
 		
 		home := os.Getenv("HOME")
