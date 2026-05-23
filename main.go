@@ -28,8 +28,8 @@ type connect_struct struct {
 }
 
 type valid_iface struct {
-	iface      *net.Interface
 	is_running bool
+	iface      *net.Interface
 }
 
 
@@ -95,6 +95,7 @@ func get_link_data(connection *connect_struct) link_data {
 	var cmd *exec.Cmd
 	if runtime.GOOS == "windows" {
 		device_argument = "[windows], " + "{" + (*(*connection).iface).Name + "}"
+
 		} else {
 		device_argument = (*(*connection).iface).Name
 		
