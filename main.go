@@ -10,7 +10,6 @@ import (
 	"os"
 	"os/exec"
 	"strings"
-	"runtime"
 
 	"github.com/wailsapp/wails/v2"
 	"github.com/wailsapp/wails/v2/pkg/options"
@@ -91,23 +90,17 @@ func get_link_data(connection *connect_struct) link_data {
 
 	var device_argument string
 
+	device_argument = (*(*connection).iface).Name
 
-	var cmd *exec.Cmd
-	if runtime.GOOS == "windows" {
-		device_argument = "[windows], " + "{" + (*(*connection).iface).Name + "}"
+	device_argument = (*(*connection).iface).Name
 
-		} else {
-		device_argument = (*(*connection).iface).Name
-		
-		home := os.Getenv("HOME")
+	home := os.Getenv("HOME")
 
-		cmd = exec.Command(
-			"pkexec",
-			home + "/personal/ldlinux/helper/helper",
-			device_argument,
-		)
-	}
-
+	cmd := exec.Command(
+		"pkexec",
+		home + "/personal/ldlinux/helper/helper",
+		device_argument,
+	)
 
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {

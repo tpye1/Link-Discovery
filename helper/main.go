@@ -76,13 +76,6 @@ func admin_helper(device string)  {
 
 	var err error
 	var handle *pcap.Handle
-	if device == "windows" {
-
-	}
-	// Ethernet Connection,
-	// Number of bytes taken from each packet 1600 is a sufficient number,
-	// promiscous will be enabled,
-	// We will choose 1 milisecond as soon as a packet is found it will stop
 
 	var link LinkDataHelperForPackets 
 
@@ -153,7 +146,7 @@ func get_lldp(lldp_layer gopacket.Layer) LinkDataHelperForPackets {
 			lldp_link_data.SwitchName = string(v.Value)
 		case layers.LLDPTLVSysDescription:
 			lldp_link_data.SwitchModel = string(v.Value)
-		case layers.LLDPTLVPortID:
+		case layers.LLDPTLVPortDescription:
 			lldp_link_data.PortID = string(v.Value)
 		case layers.LLDPTLVMgmtAddress:
 			if len(v.Value) < 6 {
