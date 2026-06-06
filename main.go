@@ -2,7 +2,6 @@ package main
 
 import (
 	"bufio"
-	"embed"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -10,10 +9,9 @@ import (
 	"os"
 	"os/exec"
 	"strings"
+	"time"
 
-	"github.com/wailsapp/wails/v2"
-	"github.com/wailsapp/wails/v2/pkg/options"
-	"github.com/wailsapp/wails/v2/pkg/options/assetserver"
+	"github.com/rivo/tview"
 )
 
 type connect_struct struct {
@@ -57,36 +55,97 @@ type link_data struct {
 	//member			int
 }
 
-//go:embed all:frontend/dist
-var assets embed.FS
 
 func main() {
-	// Create an instance of the app structure
-	app := NewApp()
 
-	// Create application with options
-	err := wails.Run(&options.App{
-		Title:  "Link Discovery Client for Linux",
-		Width:  850,
-		Height: 500,
-		AssetServer: &assetserver.Options{
-			Assets: assets,
-		},
-		BackgroundColour: &options.RGBA{R: 27, G: 38, B: 54, A: 1},
-		OnStartup:        app.startup,
-		Bind: []interface{}{
-			app,
-		},
+	app:= tview.NewApplication()
+	
+	connections := get_connection_data()
+	
+	var connect_map = make(map[string]*connect_struct)
+
+	var connect_names_arr []string
+	
+	for i:=0; i < len(connections); i++ {
+		connect_map[connections[i].name] = &(connections[i])
+		connect_names_arr = append(connect_names_arr, connections[i].name)
+	}
+
+	form := tview.NewForm()
+
+	var result_found bool = false 
+
+	var result link_data
+
+	form.SetBorder(true).SetTitle("Link Discovery Client for Linux").SetTitleAlign(tview.AlignCenter)
+
+	// Connection options
+	form.AddDropDown("Connection: ", connect_names_arr, 0, nil)
+
+	// Save Link data button
+	form.AddButton("Save Link data", func() {
+		if result_found == false {return}
+		save_link_data(&result)
+
 	})
 
+	// Get Link data button
+	form.AddButton("Get Link Data", func() {
+		_, selected_str := form.GetFormItem(0).(*tview.DropDown).GetCurrentOption()
+		connection_pointer := connect_map[selected_str]
+		result, result_found = get_link_data(connection_pointer)
+	})
+
+	// Help button
+	form.AddButton("Help", nil)
+	
+	// Quit button
+	form.AddButton("Quit", func() {
+		app.Stop()
+	})
+
+	form.AddTextView("Results:", result.switch_name, 0, 2, false, false)
+	form.AddTextView("", "Bye", 0, 2, false, false)
+	form.AddTextView("", "Hello", 0, 2, false, false)
+	form.AddTextView("", "Goodbye", 0, 2, false, false)
+	form.AddTextView("", "Greetings", 0, 2, false, false)
+
+	err := app.SetRoot(form, true).Run();
 	if err != nil {
-		println("Error:", err.Error())
+		panic(err)
 	}
+
+
+	// Reset button
 }
 
-func get_link_data(connection *connect_struct) link_data {
+// Void
+func save_link_data(data *link_data) {
+	if data == nil {
+		// Tui message pottentially
+		log.Fatal("No link data is put")
+	}
+	curr_time := time.DateTime
+
+	file, err := os.Create("LinkData_" + curr_time +".txt")
+	if err != nil {
+		log.Fatal("Error creating a file")
+	}
+	defer file.Close()
+	file.WriteString("Switch name: " + (*data).switch_name +  "\n" + 
+	"Port Identifier: " + (*data).port_id +  "\n" +
+	"Vlan Identifier: " + (*data).vlan_id +  "\n" +
+	"Switch Ip Address: " + (*data).switch_ip +  "\n" +
+	"Switch model: " + (*data).switch_model +  "\n" +
+	"Port Identifier: " + (*data).duplex_option +  "\n" +
+	"Port Identifier: " + (*data).vpt_mgmt_domain +  "\n")
+
+}
+
+func get_link_data(connection *connect_struct) (link_data, bool) {
 
 	var link link_data
+	var result_found = false
 
 	var device_argument string
 
@@ -135,11 +194,12 @@ func get_link_data(connection *connect_struct) link_data {
 		link.vpt_mgmt_domain = result.VptMgmtDomain
 		link.duplex_option = result.DuplexOption
 		link.protocol = result.Protocol
+		result_found = true
 
 	}
 
 
-	return link
+	return link, result_found
 }
 
 // Excludes wireless for Windows and Linux however I mean its not like wireless works for switches anyway
@@ -180,7 +240,7 @@ func ethernet_checker(ifaces []net.Interface) []valid_iface {
 }
 
 func get_connection_data() []connect_struct {
-	// Get the Network card - implenentation needed
+	// Get the Network card - implementation needed
 
 	var connections []connect_struct
 	var info connect_struct = connect_struct{
