@@ -10,8 +10,8 @@ import (
 	"os/exec"
 	"strings"
 	"time"
+	tea "github.com/charmbracelet/bubbletea"
 
-	"github.com/rivo/tview"
 )
 
 type connect_struct struct {
@@ -51,69 +51,37 @@ type link_data struct {
 	duplex_option   string
 	vpt_mgmt_domain string
 	protocol        string
-	//stacked			bool
-	//member			int
+	//stacked	bool
+	//member	int
 }
 
 
 func main() {
 
-	app:= tview.NewApplication()
-	
 	connections := get_connection_data()
-	
-	var connect_map = make(map[string]*connect_struct)
 
-	var connect_names_arr []string
-	
-	for i:=0; i < len(connections); i++ {
-		connect_map[connections[i].name] = &(connections[i])
-		connect_names_arr = append(connect_names_arr, connections[i].name)
+
+	p := tea.NewProgram(initialModel(connections))
+	if _, err := p.Run(); err != nil {
+		fmt.Printf("Alas, there's been an error: %v", err)
+		os.Exit(1)
 	}
+	
+//	var result_found bool = false 
 
-	form := tview.NewForm()
+//	var result link_data
 
-	var result_found bool = false 
-
-	var result link_data
-
-	form.SetBorder(true).SetTitle("Link Discovery Client for Linux").SetTitleAlign(tview.AlignCenter)
 
 	// Connection options
-	form.AddDropDown("Connection: ", connect_names_arr, 0, nil)
 
 	// Save Link data button
-	form.AddButton("Save Link data", func() {
-		if result_found == false {return}
-		save_link_data(&result)
-
-	})
 
 	// Get Link data button
-	form.AddButton("Get Link Data", func() {
-		_, selected_str := form.GetFormItem(0).(*tview.DropDown).GetCurrentOption()
-		connection_pointer := connect_map[selected_str]
-		result, result_found = get_link_data(connection_pointer)
-	})
 
 	// Help button
-	form.AddButton("Help", nil)
 	
 	// Quit button
-	form.AddButton("Quit", func() {
-		app.Stop()
-	})
 
-	form.AddTextView("Results:", result.switch_name, 0, 2, false, false)
-	form.AddTextView("", "Bye", 0, 2, false, false)
-	form.AddTextView("", "Hello", 0, 2, false, false)
-	form.AddTextView("", "Goodbye", 0, 2, false, false)
-	form.AddTextView("", "Greetings", 0, 2, false, false)
-
-	err := app.SetRoot(form, true).Run();
-	if err != nil {
-		panic(err)
-	}
 
 
 	// Reset button
