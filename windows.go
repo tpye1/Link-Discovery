@@ -17,7 +17,7 @@ import (
 )
 
 func win_isAdmin() bool {
-	token := windows.Token(0)
+	token := windows.GetCurrentProcessToken()
 
 	elevated := token.IsElevated()
 	return elevated
