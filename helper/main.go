@@ -6,7 +6,6 @@ import (
 	"log"
 	"net"
 	"os"
-	"strings"
 	"time"
 
 	"github.com/google/gopacket"
@@ -35,12 +34,12 @@ func main() {
 	admin_helper(device_args)
 }
 
-func admin_helper(device string)  {
+func admin_helper(device string) {
 
 	var err error
 	var handle *pcap.Handle
 
-	var link LinkDataHelperForPackets 
+	var link LinkDataHelperForPackets
 
 	handle, err = pcap.OpenLive(device, 1600, true, 1)
 	if err != nil {
@@ -101,7 +100,6 @@ func get_lldp(lldp_layer gopacket.Layer) LinkDataHelperForPackets {
 		"LLDP",
 	}
 
-
 	lldp := lldp_layer.(*layers.LinkLayerDiscovery)
 	for _, v := range lldp.Values {
 		switch v.Type {
@@ -137,7 +135,6 @@ func get_cdp(cdp_layer gopacket.Layer) LinkDataHelperForPackets {
 		"",
 		"CDP",
 	}
-
 
 	cdp := cdp_layer.(*layers.CiscoDiscovery)
 	for _, v := range cdp.Values {

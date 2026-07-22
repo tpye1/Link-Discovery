@@ -10,8 +10,8 @@ import (
 	"os/exec"
 	"strings"
 	"time"
-	tea "github.com/charmbracelet/bubbletea"
 
+	tea "github.com/charmbracelet/bubbletea"
 )
 
 type connect_struct struct {
@@ -28,7 +28,6 @@ type valid_iface struct {
 	is_running bool
 	iface      *net.Interface
 }
-
 
 type LinkDataHelperForPackets struct {
 	SwitchName    string `json:"switch_name"`
@@ -55,22 +54,19 @@ type link_data struct {
 	//member	int
 }
 
-
 func main() {
 
 	connections := get_connection_data()
-
 
 	p := tea.NewProgram(initialModel(connections))
 	if _, err := p.Run(); err != nil {
 		fmt.Printf("Alas, there's been an error: %v", err)
 		os.Exit(1)
 	}
-	
-//	var result_found bool = false 
 
-//	var result link_data
+	//	var result_found bool = false
 
+	//	var result link_data
 
 	// Connection options
 
@@ -79,10 +75,8 @@ func main() {
 	// Get Link data button
 
 	// Help button
-	
+
 	// Quit button
-
-
 
 	// Reset button
 }
@@ -95,18 +89,18 @@ func save_link_data(data *link_data) {
 	}
 	curr_time := time.DateTime
 
-	file, err := os.Create("LinkData_" + curr_time +".txt")
+	file, err := os.Create("LinkData_" + curr_time + ".txt")
 	if err != nil {
 		log.Fatal("Error creating a file")
 	}
 	defer file.Close()
-	file.WriteString("Switch name: " + (*data).switch_name +  "\n" + 
-	"Port Identifier: " + (*data).port_id +  "\n" +
-	"Vlan Identifier: " + (*data).vlan_id +  "\n" +
-	"Switch Ip Address: " + (*data).switch_ip +  "\n" +
-	"Switch model: " + (*data).switch_model +  "\n" +
-	"Port Identifier: " + (*data).duplex_option +  "\n" +
-	"Port Identifier: " + (*data).vpt_mgmt_domain +  "\n")
+	file.WriteString("Switch name: " + (*data).switch_name + "\n" +
+		"Port Identifier: " + (*data).port_id + "\n" +
+		"Vlan Identifier: " + (*data).vlan_id + "\n" +
+		"Switch Ip Address: " + (*data).switch_ip + "\n" +
+		"Switch model: " + (*data).switch_model + "\n" +
+		"Port Identifier: " + (*data).duplex_option + "\n" +
+		"Port Identifier: " + (*data).vpt_mgmt_domain + "\n")
 
 }
 
@@ -125,7 +119,7 @@ func get_link_data(connection *connect_struct) (link_data, bool) {
 
 	cmd := exec.Command(
 		"pkexec",
-		home + "/personal/ldlinux/helper/helper",
+		home+"/personal/ldlinux/helper/helper",
 		device_argument,
 	)
 
@@ -138,17 +132,16 @@ func get_link_data(connection *connect_struct) (link_data, bool) {
 		log.Fatal("Command not executed")
 	}
 
-
 	scanner := bufio.NewScanner(stdout)
 
-	var line string 
+	var line string
 	for scanner.Scan() {
 		line = scanner.Text()
 
 		var result LinkDataHelperForPackets
 
 		err := json.Unmarshal([]byte(line), &result)
-	
+
 		if err != nil {
 			continue
 		}
@@ -165,7 +158,6 @@ func get_link_data(connection *connect_struct) (link_data, bool) {
 		result_found = true
 
 	}
-
 
 	return link, result_found
 }
@@ -186,21 +178,23 @@ func exclude_wireless(iface net.Interface) bool {
 
 func ethernet_checker(ifaces []net.Interface) []valid_iface {
 	var valid []valid_iface
-	for _, v := range ifaces {
-		var mock_valid valid_iface
 
-		if v.Flags&net.FlagUp > 0 &&
-			len(v.HardwareAddr) > 0 &&
-			v.Flags&net.FlagLoopback == 0 &&
-			exclude_wireless(v) {
-			mock_valid.iface = &v
-			if v.Flags&net.FlagRunning > 0 {
-				mock_valid.is_running = true
-				valid = append(valid, mock_valid)
-			} else {
-				valid = append(valid, mock_valid)
+	for i := range ifaces {
+		iface := &ifaces[i]
 
+		if iface.Flags&net.FlagUp > 0 &&
+			len(iface.HardwareAddr) > 0 &&
+			iface.Flags&net.FlagLoopback == 0 &&
+			exclude_wireless(*iface) {
+			mockValid := valid_iface{
+				iface: iface,
 			}
+
+			if iface.Flags&net.FlagRunning > 0 {
+				mockValid.is_running = true
+			}
+
+			valid = append(valid, mockValid)
 		}
 	}
 
