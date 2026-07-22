@@ -7,8 +7,6 @@ import (
 	"fmt"
 	"log"
 	"net"
-	"os"
-	"os/exec"
 	"strings"
 	"time"
 
