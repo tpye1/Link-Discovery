@@ -26,22 +26,6 @@ func win_isAdmin() bool {
 
 }
 
-func relaunchAsAdmin() error {
-	exe, err := os.Executable()
-	if err != nil {
-		return err
-	}
-
-	return exec.Command(
-		"powershell",
-		"-Command",
-		"Start-Process",
-		exe,
-		"-Verb",
-		"RunAs",
-	).Run()
-}
-
 func windows_pcap_translate(iface_name string) (string, error) {
 
 	// Find all devices

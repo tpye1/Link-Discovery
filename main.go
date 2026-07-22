@@ -59,9 +59,10 @@ func main() {
 
 	if runtime.GOOS == "windows" {
 		if !win_isAdmin() {
-			relaunchAsAdmin()
-			os.Exit(0)
+			log.Fatal("Please run this application from an Administrator PowerShell/CMD window.")
 		}
+
+
 	}
 
 	connections := get_connection_data()
