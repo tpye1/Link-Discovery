@@ -59,6 +59,7 @@ func main() {
 
 	if runtime.GOOS == "windows" {
 		if !win_isAdmin() {
+fmt.Println("Admin =", win_isAdmin())
 			log.Fatal("Please run this application from an Administrator PowerShell/CMD window.")
 		}
 
