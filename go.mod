@@ -2,11 +2,13 @@ module ldlinux
 
 go 1.25.0
 
-require github.com/rivo/tview v0.42.1-0.20260316130009-63ee97f9e014
+require (
+	github.com/charmbracelet/bubbletea v1.3.10
+	github.com/rivo/tview v0.42.1-0.20260316130009-63ee97f9e014
+)
 
 require (
 	github.com/aymanbagabas/go-osc52/v2 v2.0.1 // indirect
-	github.com/charmbracelet/bubbletea v1.3.10 // indirect
 	github.com/charmbracelet/colorprofile v0.2.3-0.20250311203215-f60798e515dc // indirect
 	github.com/charmbracelet/lipgloss v1.1.0 // indirect
 	github.com/charmbracelet/x/ansi v0.10.1 // indirect
@@ -24,12 +26,13 @@ require (
 	github.com/muesli/termenv v0.16.0 // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
 	github.com/xo/terminfo v0.0.0-20220910002029-abceb7e1c41e // indirect
-	golang.org/x/term v0.29.0 // indirect
-	golang.org/x/text v0.22.0 // indirect
+	golang.org/x/term v0.45.0 // indirect
+	golang.org/x/text v0.40.0 // indirect
+	golang.org/x/tools v0.48.0 // indirect
 )
 
 require (
 	github.com/google/gopacket v1.1.19
-	golang.org/x/net v0.35.0 // indirect
-	golang.org/x/sys v0.45.0 // indirect
+	golang.org/x/net v0.57.0 // indirect
+	golang.org/x/sys v0.47.0
 )

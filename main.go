@@ -13,6 +13,7 @@ import (
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"golang.org/x/sys/windows"
 )
 
 type connect_struct struct {
@@ -55,7 +56,41 @@ type link_data struct {
 	//member	int
 }
 
+func win_isAdmin() bool {
+	token := windows.Token(0)
+
+	elevated, err := token.IsElevated()
+	if err != nil {
+		return false
+	}
+	return elevated
+
+}
+
+func relaunchAsAdmin() error {
+	exe, err := os.Executable()
+	if err != nil {
+		return err
+	}
+
+	return exec.Command(
+		"powershell",
+		"-Command",
+		"Start-Process",
+		exe,
+		"-Verb",
+		"RunAs",
+	).Run()
+}
+
 func main() {
+
+	if runtime.GOOS == "windows" {
+		if !win_isAdmin() {
+			relaunchAsAdmin()
+			os.Exit(0)
+		}
+	}
 
 	connections := get_connection_data()
 
@@ -114,24 +149,14 @@ func get_link_data(connection *connect_struct) (link_data, bool) {
 
 	device_argument = (*(*connection).iface).Name
 
-	var cmd *exec.Cmd
-	if runtime.GOOS == "windows" {
-		cmd = exec.Command(
-			"helper.exe",
-			"[windows], {"+connection.iface.Name+"}",
-		)
-		device_argument = "[windows], " + "{" + (*(*connection).iface).Name + "}"
-	} else {
-		device_argument = (*(*connection).iface).Name
+	home := os.Getenv("HOME")
 
-		home := os.Getenv("HOME")
+	cmd := exec.Command(
+		"pkexec",
+		home+"/personal/ldlinux/helper/helper",
+		device_argument,
+	)
 
-		cmd = exec.Command(
-			"pkexec",
-			home+"/personal/ldlinux/helper/helper",
-			device_argument,
-		)
-	}
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
 		log.Fatal("Pipe failed")
