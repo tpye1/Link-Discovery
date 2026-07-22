@@ -3,12 +3,9 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
-	"log"
 	"net"
 	"strings"
-	"time"
 
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/layers"
@@ -43,62 +40,10 @@ func windows_pcap_translate(iface_name string) (string, error) {
 	return "", fmt.Errorf("No pcap device found!")
 }
 
-func admin_helper(device string) {
+func get_lldp(lldp_layer gopacket.Layer, connection *connect_struct) link_data {
 
-	var err error
-	var handle *pcap.Handle
-
-	var link LinkDataHelperForPackets
-
-	handle, err = pcap.OpenLive(device, 1600, true, 1)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer handle.Close()
-
-	err = handle.SetBPFFilter(
-		"(ether proto 0x88cc) or " +
-			"(ether[12:2] <= 1500 and ether[14:1] == 0xaa and ether[15:1] == 0xaa and ether[16:1] == 0x03 and ether[20:2] == 0x2000)",
-	)
-
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	var packet_source *gopacket.PacketSource
-	timeout := time.After(time.Minute)
-
-	packet_source = gopacket.NewPacketSource(handle, handle.LinkType())
-	for {
-		select {
-		case packet := <-packet_source.Packets():
-			if cdp := packet.Layer(layers.LayerTypeCiscoDiscovery); cdp != nil {
-				link = get_cdp(cdp)
-				jsonData, err := json.Marshal(link)
-				if err != nil {
-					continue
-				}
-				fmt.Println(string(jsonData))
-			}
-			if lldp := packet.Layer(layers.LayerTypeLinkLayerDiscovery); lldp != nil {
-				link = get_lldp(lldp)
-				jsonData, err := json.Marshal(link)
-				if err != nil {
-					continue
-				}
-				fmt.Println(string(jsonData))
-			}
-
-		case <-timeout:
-			log.Fatal("Waited too long")
-		}
-
-	}
-}
-
-func get_lldp(lldp_layer gopacket.Layer) LinkDataHelperForPackets {
-
-	var lldp_link_data = LinkDataHelperForPackets{
+	var lldp_link_data = link_data{
+		connection,
 		"",
 		"",
 		"",
@@ -113,11 +58,11 @@ func get_lldp(lldp_layer gopacket.Layer) LinkDataHelperForPackets {
 	for _, v := range lldp.Values {
 		switch v.Type {
 		case layers.LLDPTLVSysName:
-			lldp_link_data.SwitchName = string(v.Value)
+			lldp_link_data.switch_name = string(v.Value)
 		case layers.LLDPTLVSysDescription:
-			lldp_link_data.SwitchModel = string(v.Value)
+			lldp_link_data.switch_model = string(v.Value)
 		case layers.LLDPTLVPortDescription:
-			lldp_link_data.PortID = string(v.Value)
+			lldp_link_data.port_id = string(v.Value)
 		case layers.LLDPTLVMgmtAddress:
 			if len(v.Value) < 6 {
 				continue
@@ -125,16 +70,17 @@ func get_lldp(lldp_layer gopacket.Layer) LinkDataHelperForPackets {
 			addr_subtype := v.Value[1]
 			if addr_subtype == 1 {
 				ipv4 := net.IPv4(v.Value[2], v.Value[3], v.Value[4], v.Value[5])
-				lldp_link_data.SwitchIP = ipv4.String()
+				lldp_link_data.switch_ip = ipv4.String()
 			}
 		}
 	}
 	return lldp_link_data
 }
 
-func get_cdp(cdp_layer gopacket.Layer) LinkDataHelperForPackets {
+func get_cdp(cdp_layer gopacket.Layer, connection *connect_struct) link_data {
 
-	var cdp_link_data = LinkDataHelperForPackets{
+	var cdp_link_data = link_data{
+		connection,
 		"",
 		"",
 		"",
@@ -149,11 +95,11 @@ func get_cdp(cdp_layer gopacket.Layer) LinkDataHelperForPackets {
 	for _, v := range cdp.Values {
 		switch v.Type {
 		case layers.CDPTLVDevID:
-			cdp_link_data.SwitchName = string(v.Value)
+			cdp_link_data.switch_name = string(v.Value)
 		case layers.CDPTLVPortID:
-			cdp_link_data.PortID = string(v.Value)
+			cdp_link_data.port_id = string(v.Value)
 		case layers.CDPTLVNativeVLAN:
-			cdp_link_data.VlanID = string(v.Value)
+			cdp_link_data.vlan_id = string(v.Value)
 		case layers.CDPTLVAddress:
 			if len(v.Value) < 6 {
 				continue
@@ -161,14 +107,14 @@ func get_cdp(cdp_layer gopacket.Layer) LinkDataHelperForPackets {
 			addr_subtype := v.Value[1]
 			if addr_subtype == 1 {
 				ipv4 := net.IPv4(v.Value[2], v.Value[3], v.Value[4], v.Value[5])
-				cdp_link_data.SwitchIP = ipv4.String()
+				cdp_link_data.switch_ip = ipv4.String()
 			}
 		case layers.CDPTLVPlatform:
-			cdp_link_data.SwitchName = string(v.Value)
+			cdp_link_data.switch_name = string(v.Value)
 		case layers.CDPTLVFullDuplex:
-			cdp_link_data.DuplexOption = string(v.Value)
+			cdp_link_data.duplex_option = string(v.Value)
 		case layers.CDPTLVVTPDomain:
-			cdp_link_data.VptMgmtDomain = string(v.Value)
+			cdp_link_data.vpt_mgmt_domain = string(v.Value)
 		}
 	}
 	return cdp_link_data

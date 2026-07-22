@@ -13,6 +13,9 @@ import (
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/google/gopacket"
+	"github.com/google/gopacket/layers"
+	"github.com/google/gopacket/pcap"
 )
 
 type connect_struct struct {
@@ -61,7 +64,6 @@ func main() {
 		if !win_isAdmin() {
 			log.Fatal("Please run this application from an Administrator PowerShell/CMD window.")
 		}
-
 
 	}
 
@@ -122,53 +124,102 @@ func get_link_data(connection *connect_struct) (link_data, bool) {
 	var result_found = false
 
 	var device_argument string
+	if runtime.GOOS == "windows" {
+		device, err := windows_pcap_translate(connection.iface.Name)
+		if err != nil {
 
-	device_argument = (*(*connection).iface).Name
+		}
+		var handle *pcap.Handle
 
-	home := os.Getenv("HOME")
+		handle, err = pcap.OpenLive(device, 1600, true, 1)
+		if err != nil {
+			log.Fatal(err)
+		}
+		defer handle.Close()
 
-	cmd := exec.Command(
-		"pkexec",
-		home+"/personal/ldlinux/helper/helper",
-		device_argument,
-	)
-
-	stdout, err := cmd.StdoutPipe()
-	if err != nil {
-		log.Fatal("Pipe failed")
-	}
-	err = cmd.Start()
-	if err != nil {
-		log.Fatal("Command not executed")
-	}
-
-	scanner := bufio.NewScanner(stdout)
-
-	var line string
-	for scanner.Scan() {
-		line = scanner.Text()
-
-		var result LinkDataHelperForPackets
-
-		err := json.Unmarshal([]byte(line), &result)
+		err = handle.SetBPFFilter(
+			"(ether proto 0x88cc) or " +
+				"(ether[12:2] <= 1500 and ether[14:1] == 0xaa and ether[15:1] == 0xaa and ether[16:1] == 0x03 and ether[20:2] == 0x2000)",
+		)
 
 		if err != nil {
-			continue
+			log.Fatal(err)
 		}
 
-		link.connection = connection
-		link.switch_name = result.SwitchName
-		link.switch_model = result.SwitchModel
-		link.port_id = result.PortID
-		link.switch_ip = result.SwitchIP
-		link.vlan_id = result.VlanID
-		link.vpt_mgmt_domain = result.VptMgmtDomain
-		link.duplex_option = result.DuplexOption
-		link.protocol = result.Protocol
-		result_found = true
+		var packet_source *gopacket.PacketSource
+		timeout := time.After(time.Minute)
 
+		packet_source = gopacket.NewPacketSource(handle, handle.LinkType())
+		for {
+			select {
+			case packet := <-packet_source.Packets():
+				if cdp := packet.Layer(layers.LayerTypeCiscoDiscovery); cdp != nil {
+					link = get_cdp(cdp, connection)
+					if err != nil {
+						continue
+					}
+				}
+				if lldp := packet.Layer(layers.LayerTypeLinkLayerDiscovery); lldp != nil {
+					link = get_lldp(lldp, connection)
+					if err != nil {
+						continue
+					}
+				}
+
+			case <-timeout:
+				log.Fatal("Waited too long")
+			}
+
+		}
+
+	} else {
+
+		device_argument = (*(*connection).iface).Name
+
+		home := os.Getenv("HOME")
+
+		cmd := exec.Command(
+			"pkexec",
+			home+"/personal/ldlinux/helper/helper",
+			device_argument,
+		)
+
+		stdout, err := cmd.StdoutPipe()
+		if err != nil {
+			log.Fatal("Pipe failed")
+		}
+		err = cmd.Start()
+		if err != nil {
+			log.Fatal("Command not executed")
+		}
+
+		scanner := bufio.NewScanner(stdout)
+
+		var line string
+		for scanner.Scan() {
+			line = scanner.Text()
+
+			var result LinkDataHelperForPackets
+
+			err := json.Unmarshal([]byte(line), &result)
+
+			if err != nil {
+				continue
+			}
+
+			link.connection = connection
+			link.switch_name = result.SwitchName
+			link.switch_model = result.SwitchModel
+			link.port_id = result.PortID
+			link.switch_ip = result.SwitchIP
+			link.vlan_id = result.VlanID
+			link.vpt_mgmt_domain = result.VptMgmtDomain
+			link.duplex_option = result.DuplexOption
+			link.protocol = result.Protocol
+			result_found = true
+
+		}
 	}
-
 	return link, result_found
 }
 
@@ -213,7 +264,7 @@ func ethernet_checker(ifaces []net.Interface) []valid_iface {
 
 func get_connection_data() []connect_struct {
 	// Get the Network card - implementation needed
-	
+
 	var connections []connect_struct
 	var info connect_struct = connect_struct{
 		2,
@@ -282,13 +333,6 @@ func get_connection_data() []connect_struct {
 		info.mac_addr = v.iface.HardwareAddr.String()
 		info.network_card = v.iface.Name
 		info.ip_addr = ip.String()
-		if runtime.GOOS == "windows" {
-			info.network_card, err = windows_pcap_translate(v.iface.Name)
-			if err != nil {
-				info.network_card = v.iface.Name + " pcap:false"
-			}
-		}
-
 
 		if v.is_running && info.ip_addr != "<nil>" {
 			info.status = true
