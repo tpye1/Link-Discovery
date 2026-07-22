@@ -155,15 +155,9 @@ func get_link_data(connection *connect_struct) (link_data, bool) {
 			case packet := <-packet_source.Packets():
 				if cdp := packet.Layer(layers.LayerTypeCiscoDiscovery); cdp != nil {
 					link = get_cdp(cdp, connection)
-					if err != nil {
-						continue
-					}
 				}
 				if lldp := packet.Layer(layers.LayerTypeLinkLayerDiscovery); lldp != nil {
 					link = get_lldp(lldp, connection)
-					if err != nil {
-						continue
-					}
 				}
 
 			case <-timeout:
