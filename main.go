@@ -67,7 +67,10 @@ func main() {
 
 	connections := get_connection_data()
 
-	p := tea.NewProgram(initialModel(connections))
+	p := tea.NewProgram(
+		initialModel(connections),
+		tea.WithAltScreen(),
+	)
 	if _, err := p.Run(); err != nil {
 		fmt.Printf("Alas, there's been an error: %v", err)
 		os.Exit(1)
@@ -210,7 +213,7 @@ func ethernet_checker(ifaces []net.Interface) []valid_iface {
 
 func get_connection_data() []connect_struct {
 	// Get the Network card - implementation needed
-
+	
 	var connections []connect_struct
 	var info connect_struct = connect_struct{
 		2,
@@ -273,15 +276,19 @@ func get_connection_data() []connect_struct {
 			break
 
 		}
-		// if strings.HasPrefix(ip.String(), "192.168") {
-		// 	ipv4_str
-		// }
 
 		info.id = count + 1
 		info.name = fmt.Sprintf("Ethernet %d", count)
 		info.mac_addr = v.iface.HardwareAddr.String()
 		info.network_card = v.iface.Name
 		info.ip_addr = ip.String()
+		if runtime.GOOS == "windows" {
+			info.network_card, err = windows_pcap_translate(v.iface.Name)
+			if err != nil {
+				info.network_card = v.iface.Name + " pcap:false"
+			}
+		}
+
 
 		if v.is_running && info.ip_addr != "<nil>" {
 			info.status = true

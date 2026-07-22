@@ -4,30 +4,42 @@ import (
 	"fmt"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 )
 
 type model struct {
+	width  int
+	height int
+
 	choices []string
-	options []string
-	// text area
-	cursor   int
+	cursor  int
+
 	selected map[string]*connect_struct
+
+	current *connect_struct
+	result  *link_data
 }
 
 func initialModel(connections []connect_struct) model {
 
-	var connect_map = make(map[string]*connect_struct)
+	connectMap := make(map[string]*connect_struct)
+	var names []string
 
-	var connect_names_arr []string
+	for i := range connections {
+		connectMap[connections[i].name] = &connections[i]
+		names = append(names, connections[i].name)
+	}
 
-	for i := 0; i < len(connections); i++ {
-		connect_map[connections[i].name] = &(connections[i])
-		connect_names_arr = append(connect_names_arr, connections[i].name)
+	var current *connect_struct
+
+	if len(connections) > 0 {
+		current = &connections[0]
 	}
 
 	return model{
-		choices:  connect_names_arr,
-		selected: make(map[string]*connect_struct),
+		choices:  names,
+		selected: connectMap,
+		current:  current,
 	}
 }
 
@@ -36,65 +48,189 @@ func (m model) Init() tea.Cmd {
 }
 
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+
 	switch msg := msg.(type) {
 
-	// Is it a key press?
+	case tea.WindowSizeMsg:
+		m.width = msg.Width
+		m.height = msg.Height
+
 	case tea.KeyMsg:
 
-		// Cool, what was the actual key pressed?
 		switch msg.String() {
+		case "up":
+			if m.cursor > 0 {
+				m.cursor--
+				m.current = m.selected[m.choices[m.cursor]]
+			}
+
+		case "down":
+			if m.cursor < len(m.choices)-1 {
+				m.cursor++
+				m.current = m.selected[m.choices[m.cursor]]
+			}
+
+		case "enter":
+			if len(m.choices) > 0 {
+				m.current = m.selected[m.choices[m.cursor]]
+			}
 
 		case "ctrl+g":
-			// Get the link data
-			//return
-		case "ctrl+s":
-			// Save the link data
 
-		case "ctrl+h":
-			// Help
+			if m.current != nil {
+				result, found := get_link_data(m.current)
+
+				if found {
+					m.result = &result
+				}
+			}
 
 		case "ctrl+r":
-			// Reset the program
+			m.result = nil
 
-		// These keys should exit the program.
+		case "ctrl+s":
+
+			if m.result != nil {
+				save_link_data(m.result)
+			}
+
+		case "ctrl+h":
+			// help later
+
 		case "ctrl+c", "ctrl+q":
 			return m, tea.Quit
-
 		}
-
 	}
 
-	// Return the updated model to the Bubble Tea runtime for processing.
-	// Note that we're not returning a command.
 	return m, nil
 }
 
 func (m model) View() string {
-	// The header
-	s := "Welcome to LdLinux\n\n"
 
-	// Iterate over our choices
-	for i, choice := range m.choices {
+	leftWidth := 25
 
-		// Is the cursor pointing at this choice?
-		cursor := " " // no cursor
-		if m.cursor == i {
-			cursor = ">" // cursor!
-		}
-
-		// Is this choice selected?
-		checked := " " // not selected
-		if _, ok := m.selected[choice]; ok {
-			checked = "x" // selected!
-		}
-
-		// Render the row
-		s += fmt.Sprintf("%s [%s] %s\n", cursor, checked, choice)
+	rightWidth := m.width - leftWidth - 8
+	if rightWidth < 40 {
+		rightWidth = 40
 	}
 
-	// The footer
-	s += "\nPress ctrl+q to quit.\n"
+	var interfaceList string
 
-	// Send the UI for rendering
-	return s
+	for i, choice := range m.choices {
+
+		cursor := " "
+
+		if i == m.cursor {
+			cursor = ">"
+		}
+
+		selected := " "
+
+		if m.current != nil &&
+			m.current.name == choice {
+			selected = "*"
+		}
+
+		interfaceList += fmt.Sprintf(
+			"%s [%s] %s\n",
+			cursor,
+			selected,
+			choice,
+		)
+	}
+	leftPane := lipgloss.NewStyle().
+		Width(leftWidth).
+		Height(15).
+		Border(lipgloss.RoundedBorder()).
+		Render(
+			"Interfaces\n\n" +
+				interfaceList,
+		)
+
+	resultText := "Press Ctrl+G to get switch data"
+
+	if m.result != nil {
+
+		resultText = fmt.Sprintf(
+			"Switch Name : %s\n\n"+
+				"Port ID     : %s\n"+
+				"VLAN        : %s\n\n"+
+				"Switch IP   : %s\n\n"+
+				"Model       : %s\n"+
+				"Duplex      : %s\n"+
+				"VTP Domain  : %s\n\n"+
+				"Protocol    : %s",
+			m.result.switch_name,
+			m.result.port_id,
+			m.result.vlan_id,
+			m.result.switch_ip,
+			m.result.switch_model,
+			m.result.duplex_option,
+			m.result.vpt_mgmt_domain,
+			m.result.protocol,
+		)
+	}
+
+	rightPane := lipgloss.NewStyle().
+		Width(rightWidth).
+		Height(15).
+		Border(lipgloss.RoundedBorder()).
+		Render(
+			"Link Discovery\n\n" +
+				resultText,
+		)
+
+	top := lipgloss.JoinHorizontal(
+		lipgloss.Top,
+		leftPane,
+		rightPane,
+	)
+
+	connectionInfo := "No adapter selected"
+
+	if m.current != nil {
+
+		status := "Down"
+
+		if m.current.status {
+			status = "Up"
+		}
+
+		connectionInfo = fmt.Sprintf(
+			"Connection : %s\n"+
+				"Network    : %s\n"+
+				"MAC Addr   : %s\n"+
+				"IPv4 Addr  : %s\n"+
+				"Status     : %s",
+			m.current.name,
+			m.current.network_card,
+			m.current.mac_addr,
+			m.current.ip_addr,
+			status,
+		)
+	}
+
+	bottom := lipgloss.NewStyle().
+		Width(m.width - 2).
+		Border(lipgloss.RoundedBorder()).
+		Render(connectionInfo)
+
+	footer := lipgloss.NewStyle().
+		Bold(true).
+		Render(
+			"^Q Quit    ^R Reset    ^G Get Link Data    ^S Save Link Data    ^H Help",
+		)
+
+	title := lipgloss.NewStyle().
+		Bold(true).
+		Render("LDLinux")
+
+	return title +
+		"\n\n" +
+		top +
+		"\n\n" +
+		bottom +
+		"\n" +
+		footer +
+		"\n"
 }

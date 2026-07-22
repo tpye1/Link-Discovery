@@ -11,3 +11,8 @@ func win_isAdmin() bool {
 func relaunchAsAdmin() error {
 	return nil
 }
+
+func windows_pcap_translate(iface_name string) (string, error) {
+
+	return "", nil
+}
