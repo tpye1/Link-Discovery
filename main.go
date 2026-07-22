@@ -8,6 +8,7 @@ import (
 	"net"
 	"os"
 	"os/exec"
+	"runtime"
 	"strings"
 	"time"
 
@@ -113,16 +114,24 @@ func get_link_data(connection *connect_struct) (link_data, bool) {
 
 	device_argument = (*(*connection).iface).Name
 
-	device_argument = (*(*connection).iface).Name
+	var cmd *exec.Cmd
+	if runtime.GOOS == "windows" {
+		cmd = exec.Command(
+			"helper.exe",
+			"[windows], {"+connection.iface.Name+"}",
+		)
+		device_argument = "[windows], " + "{" + (*(*connection).iface).Name + "}"
+	} else {
+		device_argument = (*(*connection).iface).Name
 
-	home := os.Getenv("HOME")
+		home := os.Getenv("HOME")
 
-	cmd := exec.Command(
-		"pkexec",
-		home+"/personal/ldlinux/helper/helper",
-		device_argument,
-	)
-
+		cmd = exec.Command(
+			"pkexec",
+			home+"/personal/ldlinux/helper/helper",
+			device_argument,
+		)
+	}
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
 		log.Fatal("Pipe failed")
