@@ -13,7 +13,6 @@ import (
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
-	"golang.org/x/sys/windows"
 )
 
 type connect_struct struct {
@@ -54,33 +53,6 @@ type link_data struct {
 	protocol        string
 	//stacked	bool
 	//member	int
-}
-
-func win_isAdmin() bool {
-	token := windows.Token(0)
-
-	elevated, err := token.IsElevated()
-	if err != nil {
-		return false
-	}
-	return elevated
-
-}
-
-func relaunchAsAdmin() error {
-	exe, err := os.Executable()
-	if err != nil {
-		return err
-	}
-
-	return exec.Command(
-		"powershell",
-		"-Command",
-		"Start-Process",
-		exe,
-		"-Verb",
-		"RunAs",
-	).Run()
 }
 
 func main() {
