@@ -8,7 +8,7 @@ import (
 	"github.com/google/gopacket"
 )
 
-// This is to make the compiler not scream at me work even though it is unreachable code. Ai helps with this icl.
+// This is to make the compiler not scream at me work even though it is unreachable code. Ai helped with this icl.
 
 func win_isAdmin() bool {
 	return true
@@ -20,7 +20,7 @@ func relaunchAsAdmin() error {
 
 func windows_pcap_translate(iface_name string) (string, error) {
 
-	return "", nil
+	return iface_name, nil
 }
 
 func get_lldp(lldp_layer gopacket.Layer, connection *connect_struct) link_data {

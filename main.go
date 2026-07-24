@@ -77,22 +77,6 @@ func main() {
 		fmt.Printf("Alas, there's been an error: %v", err)
 		os.Exit(1)
 	}
-
-	//	var result_found bool = false
-
-	//	var result link_data
-
-	// Connection options
-
-	// Save Link data button
-
-	// Get Link data button
-
-	// Help button
-
-	// Quit button
-
-	// Reset button
 }
 
 // Void
