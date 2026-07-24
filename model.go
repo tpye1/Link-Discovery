@@ -82,6 +82,10 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 				if found {
 					m.result = &result
+				} else {
+					m.result = &link_data{
+						switch_name: "NOT FOUND",
+					}
 				}
 			}
 
@@ -105,10 +109,6 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 func (m model) View() string {
-
-	if m.width == 0 {
-		return "Loading..."
-	}
 
 	leftWidth := 25
 
