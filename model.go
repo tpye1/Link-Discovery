@@ -108,7 +108,7 @@ func (m model) View() string {
 
 	leftWidth := 25
 
-	rightWidth := m.width - leftWidth - 8
+	rightWidth := m.width - leftWidth - 6
 	if rightWidth < 40 {
 		rightWidth = 40
 	}
@@ -123,60 +123,23 @@ func (m model) View() string {
 			cursor = ">"
 		}
 
-		selected := " "
-
-		if m.current != nil &&
-			m.current.name == choice {
-			selected = "*"
-		}
-
 		interfaceList += fmt.Sprintf(
-			"%s [%s] %s\n",
+			"%s %s\n",
 			cursor,
-			selected,
 			choice,
 		)
 	}
 
-	leftPane := lipgloss.NewStyle().
+	interfacesPane := lipgloss.NewStyle().
 		Width(leftWidth).
-		Height(15).
+		Height(6).
 		Border(lipgloss.RoundedBorder()).
 		Render(
 			"Interfaces\n\n" +
 				interfaceList,
 		)
 
-	resultText := "Press Ctrl+G to get switch data"
-
-	if m.result != nil {
-
-		resultText = fmt.Sprintf(
-			"Switch Name : %s\n\n"+
-				"Port ID     : %s\n"+
-				"VLAN        : %s",
-			m.result.switch_name,
-			m.result.port_id,
-			m.result.vlan_id,
-		)
-	}
-
-	rightPane := lipgloss.NewStyle().
-		Width(rightWidth).
-		Height(15).
-		Border(lipgloss.RoundedBorder()).
-		Render(
-			"Link Discovery\n\n" +
-				resultText,
-		)
-
-	top := lipgloss.JoinHorizontal(
-		lipgloss.Top,
-		leftPane,
-		rightPane,
-	)
-
-	connectionInfo := "No adapter selected"
+	connectionText := "No adapter selected"
 
 	if m.current != nil {
 
@@ -186,7 +149,7 @@ func (m model) View() string {
 			status = "Up"
 		}
 
-		connectionInfo = fmt.Sprintf(
+		connectionText = fmt.Sprintf(
 			"Connection : %s\n"+
 				"Network    : %s\n"+
 				"MAC Addr   : %s\n"+
@@ -201,22 +164,36 @@ func (m model) View() string {
 	}
 
 	connectionPane := lipgloss.NewStyle().
-		Width(leftWidth).
-		Height(8).
+		Width(rightWidth).
+		Height(6).
 		Border(lipgloss.RoundedBorder()).
-		Render(connectionInfo)
+		Render(
+			"Connection\n\n" +
+				connectionText,
+		)
 
-	resultsInfo := "No switch information available"
+	top := lipgloss.JoinHorizontal(
+		lipgloss.Top,
+		interfacesPane,
+		connectionPane,
+	)
 
-	if m.result == nil {
-		resultsInfo = "RESULT IS NIL"
-	} else {
-		resultsInfo = fmt.Sprintf(
-			"Switch IP  : %s\n"+
-				"Model      : %s\n"+
-				"Duplex     : %s\n"+
-				"VTP Domain : %s\n"+
-				"Protocol   : %s",
+	linkData := "Press Ctrl+G to collect LLDP/CDP data"
+
+	if m.result != nil {
+
+		linkData = fmt.Sprintf(
+			"Switch Name : %s\n"+
+				"Port ID     : %s\n"+
+				"VLAN        : %s\n"+
+				"Switch IP   : %s\n"+
+				"Model       : %s\n"+
+				"Duplex      : %s\n"+
+				"VTP Domain  : %s\n"+
+				"Protocol    : %s",
+			m.result.switch_name,
+			m.result.port_id,
+			m.result.vlan_id,
 			m.result.switch_ip,
 			m.result.switch_model,
 			m.result.duplex_option,
@@ -225,20 +202,14 @@ func (m model) View() string {
 		)
 	}
 
-	resultsPane := lipgloss.NewStyle().
-		Width(rightWidth).
-		Height(8).
+	linkPane := lipgloss.NewStyle().
+		Width(m.width - 2).
+		Height(12).
 		Border(lipgloss.RoundedBorder()).
 		Render(
-			"Additional Results\n\n" +
-				resultsInfo,
+			"Link Data\n\n" +
+				linkData,
 		)
-
-	bottom := lipgloss.JoinHorizontal(
-		lipgloss.Top,
-		connectionPane,
-		resultsPane,
-	)
 
 	footer := lipgloss.NewStyle().
 		Bold(true).
@@ -254,7 +225,7 @@ func (m model) View() string {
 		"\n\n" +
 		top +
 		"\n\n" +
-		bottom +
+		linkPane +
 		"\n\n" +
 		footer +
 		"\n"
