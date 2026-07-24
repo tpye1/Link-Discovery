@@ -80,9 +80,6 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if m.current != nil {
 				result, found := get_link_data(m.current)
 
-				fmt.Printf("FOUND: %v\n", found)
-				fmt.Printf("RESULT: %+v\n", result)
-
 				if found {
 					m.result = &result
 				}
@@ -211,8 +208,9 @@ func (m model) View() string {
 
 	resultsInfo := "No switch information available"
 
-	if m.result != nil {
-
+	if m.result == nil {
+		resultsInfo = "RESULT IS NIL"
+	} else {
 		resultsInfo = fmt.Sprintf(
 			"Switch IP  : %s\n"+
 				"Model      : %s\n"+
