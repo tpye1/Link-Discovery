@@ -104,7 +104,6 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	return m, nil
 }
-
 func (m model) View() string {
 
 	leftWidth := 25
@@ -138,6 +137,7 @@ func (m model) View() string {
 			choice,
 		)
 	}
+
 	leftPane := lipgloss.NewStyle().
 		Width(leftWidth).
 		Height(15).
@@ -154,20 +154,10 @@ func (m model) View() string {
 		resultText = fmt.Sprintf(
 			"Switch Name : %s\n\n"+
 				"Port ID     : %s\n"+
-				"VLAN        : %s\n\n"+
-				"Switch IP   : %s\n\n"+
-				"Model       : %s\n"+
-				"Duplex      : %s\n"+
-				"VTP Domain  : %s\n\n"+
-				"Protocol    : %s",
+				"VLAN        : %s",
 			m.result.switch_name,
 			m.result.port_id,
 			m.result.vlan_id,
-			m.result.switch_ip,
-			m.result.switch_model,
-			m.result.duplex_option,
-			m.result.vpt_mgmt_domain,
-			m.result.protocol,
 		)
 	}
 
@@ -210,10 +200,44 @@ func (m model) View() string {
 		)
 	}
 
-	bottom := lipgloss.NewStyle().
-		Width(m.width - 2).
+	connectionPane := lipgloss.NewStyle().
+		Width(leftWidth).
+		Height(8).
 		Border(lipgloss.RoundedBorder()).
 		Render(connectionInfo)
+
+	resultsInfo := "No switch information available"
+
+	if m.result != nil {
+
+		resultsInfo = fmt.Sprintf(
+			"Switch IP  : %s\n"+
+				"Model      : %s\n"+
+				"Duplex     : %s\n"+
+				"VTP Domain : %s\n"+
+				"Protocol   : %s",
+			m.result.switch_ip,
+			m.result.switch_model,
+			m.result.duplex_option,
+			m.result.vpt_mgmt_domain,
+			m.result.protocol,
+		)
+	}
+
+	resultsPane := lipgloss.NewStyle().
+		Width(rightWidth).
+		Height(8).
+		Border(lipgloss.RoundedBorder()).
+		Render(
+			"Additional Results\n\n" +
+				resultsInfo,
+		)
+
+	bottom := lipgloss.JoinHorizontal(
+		lipgloss.Top,
+		connectionPane,
+		resultsPane,
+	)
 
 	footer := lipgloss.NewStyle().
 		Bold(true).
@@ -230,7 +254,7 @@ func (m model) View() string {
 		top +
 		"\n\n" +
 		bottom +
-		"\n" +
+		"\n\n" +
 		footer +
 		"\n"
 }
