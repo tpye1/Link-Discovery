@@ -195,8 +195,9 @@ func get_link_data(connection *connect_struct) (link_data, bool) {
 			link.duplex_option = result.DuplexOption
 			link.protocol = result.Protocol
 			result_found = true
-
+			break
 		}
+		cmd.Process.Kill()
 	}
 	return link, result_found
 }
