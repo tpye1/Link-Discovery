@@ -71,7 +71,6 @@ func main() {
 
 	p := tea.NewProgram(
 		initialModel(connections),
-		tea.WithAltScreen(),
 	)
 	if _, err := p.Run(); err != nil {
 		fmt.Printf("Alas, there's been an error: %v", err)
@@ -177,13 +176,18 @@ func get_link_data(connection *connect_struct) (link_data, bool) {
 		for scanner.Scan() {
 			line = scanner.Text()
 
+			fmt.Printf("RAW JSON: %s\n", line)
+
 			var result LinkDataHelperForPackets
 
 			err := json.Unmarshal([]byte(line), &result)
 
 			if err != nil {
+				fmt.Printf("JSON ERROR: %v\n", err)
 				continue
 			}
+
+			fmt.Printf("PARSED: %+v\n", result)
 
 			link.connection = connection
 			link.switch_name = result.SwitchName

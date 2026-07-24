@@ -63,6 +63,11 @@ func admin_helper(device string) {
 	for {
 		select {
 		case packet := <-packet_source.Packets():
+			
+			fmt.Println("PACKET RECEIVED")
+
+			fmt.Println(packet.Dump())
+			
 			if cdp := packet.Layer(layers.LayerTypeCiscoDiscovery); cdp != nil {
 				link = get_cdp(cdp)
 				jsonData, err := json.Marshal(link)
@@ -72,6 +77,10 @@ func admin_helper(device string) {
 				fmt.Println(string(jsonData))
 			}
 			if lldp := packet.Layer(layers.LayerTypeLinkLayerDiscovery); lldp != nil {
+				
+				fmt.Println("LLDP FOUND")
+				fmt.Printf("%#v\n", lldp)
+				
 				link = get_lldp(lldp)
 				jsonData, err := json.Marshal(link)
 				if err != nil {
@@ -155,7 +164,7 @@ func get_cdp(cdp_layer gopacket.Layer) LinkDataHelperForPackets {
 				cdp_link_data.SwitchIP = ipv4.String()
 			}
 		case layers.CDPTLVPlatform:
-			cdp_link_data.SwitchName = string(v.Value)
+			cdp_link_data.SwitchModel = string(v.Value)
 		case layers.CDPTLVFullDuplex:
 			cdp_link_data.DuplexOption = string(v.Value)
 		case layers.CDPTLVVTPDomain:

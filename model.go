@@ -80,6 +80,9 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if m.current != nil {
 				result, found := get_link_data(m.current)
 
+				fmt.Printf("FOUND: %v\n", found)
+				fmt.Printf("RESULT: %+v\n", result)
+
 				if found {
 					m.result = &result
 				}
