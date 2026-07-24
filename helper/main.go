@@ -63,11 +63,11 @@ func admin_helper(device string) {
 	for {
 		select {
 		case packet := <-packet_source.Packets():
-			
-			fmt.Println("PACKET RECEIVED")
 
-			fmt.Println(packet.Dump())
-			
+			log.Println("PACKET RECEIVED")
+
+			log.Println(packet.Dump())
+
 			if cdp := packet.Layer(layers.LayerTypeCiscoDiscovery); cdp != nil {
 				link = get_cdp(cdp)
 				jsonData, err := json.Marshal(link)
@@ -75,18 +75,20 @@ func admin_helper(device string) {
 					continue
 				}
 				fmt.Println(string(jsonData))
+				return
 			}
 			if lldp := packet.Layer(layers.LayerTypeLinkLayerDiscovery); lldp != nil {
-				
-				fmt.Println("LLDP FOUND")
-				fmt.Printf("%#v\n", lldp)
-				
+
+				log.Println("LLDP FOUND")
+				log.Printf("%#v\n", lldp)
+
 				link = get_lldp(lldp)
 				jsonData, err := json.Marshal(link)
 				if err != nil {
 					continue
 				}
 				fmt.Println(string(jsonData))
+				return
 			}
 
 		case <-timeout:
