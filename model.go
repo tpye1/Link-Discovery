@@ -106,6 +106,10 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 func (m model) View() string {
 
+	if m.width == 0 {
+		return "Loading..."
+	}
+
 	leftWidth := 25
 
 	rightWidth := m.width - leftWidth - 6
@@ -203,7 +207,7 @@ func (m model) View() string {
 	}
 
 	linkPane := lipgloss.NewStyle().
-		Width(m.width - 2).
+		Width(m.width).
 		Height(12).
 		Border(lipgloss.RoundedBorder()).
 		Render(
