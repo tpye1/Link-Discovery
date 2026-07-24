@@ -157,7 +157,7 @@ func get_link_data(connection *connect_struct) (link_data, bool) {
 
 		cmd := exec.Command(
 			"pkexec",
-			home+"/personal/ldlinux/helper/helper",
+			home+"/ldlinux/helper/helper",
 			device_argument,
 		)
 
