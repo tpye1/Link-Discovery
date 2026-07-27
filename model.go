@@ -110,6 +110,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	return m, nil
 }
+
 func (m model) View() string {
 
 	leftWidth := 25
