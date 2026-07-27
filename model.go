@@ -86,14 +86,14 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.errMessage = err.Error()
 					m.result = nil
 					break
-
-				} else {
-					m.result = &result
 				}
+			
+				m.errMessage = ""
+				m.result = &result
 			}
-
 		case "ctrl+r":
 			m.result = nil
+			m.errMessage = ""
 
 		case "ctrl+s":
 
@@ -226,9 +226,10 @@ func (m model) View() string {
 	errorPane := ""
 	if m.errMessage != "" {
 		errorPane = lipgloss.NewStyle().
-        	Foreground(lipgloss.Color("9")).
-        	Border(lipgloss.RoundedBorder()).
-        	Render("Error\n\n" + m.errMessage)
+		Width(m.width).
+		Foreground(lipgloss.Color("9")).
+		Border(lipgloss.RoundedBorder()).
+		Render("Error\n\n" + m.errMessage)
 	}
 
 	footer := lipgloss.NewStyle().
