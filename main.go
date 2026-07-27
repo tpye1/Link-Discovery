@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"net"
@@ -80,44 +81,46 @@ func main() {
 }
 
 // Void
-func save_link_data(data *link_data) {
+func save_link_data(data *link_data) error {
+	var err error = nil
 	if data == nil {
 		// Tui message pottentially
-		log.Fatal("No link data is put")
+		err = errors.New("No link data is put")
+		return err
 	}
 	curr_time := time.DateTime
 
 	file, err := os.Create("LinkData_" + curr_time + ".txt")
 	if err != nil {
-		log.Fatal("Error creating a file")
+		return err
 	}
 	defer file.Close()
-	file.WriteString("Switch name: " + (*data).switch_name + "\n" +
+	_, err = file.WriteString("Switch name: " + (*data).switch_name + "\n" +
 		"Port Identifier: " + (*data).port_id + "\n" +
 		"Vlan Identifier: " + (*data).vlan_id + "\n" +
 		"Switch Ip Address: " + (*data).switch_ip + "\n" +
 		"Switch model: " + (*data).switch_model + "\n" +
 		"Port Identifier: " + (*data).duplex_option + "\n" +
 		"Port Identifier: " + (*data).vpt_mgmt_domain + "\n")
+	return err
 
 }
 
-func get_link_data(connection *connect_struct) (link_data, bool) {
+func get_link_data(connection *connect_struct) (link_data, error) {
 
 	var link link_data
-	var result_found = false
 
 	var device_argument string
 	if runtime.GOOS == "windows" {
 		device, err := windows_pcap_translate(connection.iface.Name)
 		if err != nil {
-
+			return link, err
 		}
 		var handle *pcap.Handle
 
 		handle, err = pcap.OpenLive(device, 1600, true, 1)
 		if err != nil {
-			log.Fatal(err)
+			return link, err
 		}
 		defer handle.Close()
 
@@ -127,7 +130,7 @@ func get_link_data(connection *connect_struct) (link_data, bool) {
 		)
 
 		if err != nil {
-			log.Fatal(err)
+			return link, err
 		}
 
 		var packet_source *gopacket.PacketSource
@@ -145,7 +148,8 @@ func get_link_data(connection *connect_struct) (link_data, bool) {
 				}
 
 			case <-timeout:
-				log.Fatal("Waited too long")
+				err = errors.New("Timeout")
+				return link, err
 			}
 
 		}
@@ -164,11 +168,11 @@ func get_link_data(connection *connect_struct) (link_data, bool) {
 
 		stdout, err := cmd.StdoutPipe()
 		if err != nil {
-			log.Fatal("Pipe failed")
+			return link, err
 		}
 		err = cmd.Start()
 		if err != nil {
-			log.Fatal("Command not executed")
+			return link, err
 		}
 
 		scanner := bufio.NewScanner(stdout)
@@ -182,7 +186,7 @@ func get_link_data(connection *connect_struct) (link_data, bool) {
 			err := json.Unmarshal([]byte(line), &result)
 
 			if err != nil {
-				fmt.Printf("JSON ERROR: %v\n", err)
+				fmt.Errorf("JSON ERROR: %v\n", err)
 				continue
 			}
 
@@ -195,12 +199,11 @@ func get_link_data(connection *connect_struct) (link_data, bool) {
 			link.vpt_mgmt_domain = result.VptMgmtDomain
 			link.duplex_option = result.DuplexOption
 			link.protocol = result.Protocol
-			result_found = true
 			break
 		}
 		cmd.Process.Kill()
 	}
-	return link, result_found
+	return link, nil
 }
 
 // Excludes wireless for Windows and Linux however I mean its not like wireless works for switches anyway

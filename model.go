@@ -18,6 +18,8 @@ type model struct {
 
 	current *connect_struct
 	result  *link_data
+
+	errMessage string
 }
 
 func initialModel(connections []connect_struct) model {
@@ -214,6 +216,13 @@ func (m model) View() string {
 			"Link Data\n\n" +
 				linkData,
 		)
+	errorPane := ""
+	if m.errMessage != "" {
+		errorPane = lipgloss.NewStyle().
+        	Foreground(lipgloss.Color("9")).
+        	Border(lipgloss.RoundedBorder()).
+        	Render("Error\n\n" + m.errMessage)
+	}
 
 	footer := lipgloss.NewStyle().
 		Bold(true).
@@ -230,6 +239,8 @@ func (m model) View() string {
 		top +
 		"\n\n" +
 		linkPane +
+		"\n\n" +
+		errorPane +
 		"\n\n" +
 		footer +
 		"\n"
