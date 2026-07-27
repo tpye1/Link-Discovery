@@ -34,16 +34,16 @@ func main() {
 	admin_helper(device_args)
 }
 
-func admin_helper(device string) {
+func admin_helper(device string) error {
 
-	var err error
+	var err error = nil
 	var handle *pcap.Handle
 
 	var link LinkDataHelperForPackets
 
 	handle, err = pcap.OpenLive(device, 1600, true, 1)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 	defer handle.Close()
 
@@ -53,7 +53,7 @@ func admin_helper(device string) {
 	)
 
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	var packet_source *gopacket.PacketSource
@@ -71,7 +71,7 @@ func admin_helper(device string) {
 					continue
 				}
 				fmt.Println(string(jsonData))
-				return
+				return nil
 			}
 			if lldp := packet.Layer(layers.LayerTypeLinkLayerDiscovery); lldp != nil {
 
@@ -81,11 +81,11 @@ func admin_helper(device string) {
 					continue
 				}
 				fmt.Println(string(jsonData))
-				return
+				return nil
 			}
 
 		case <-timeout:
-			log.Fatal("Waited too long")
+			return fmt.Errorf("Timeout exceeded")
 		}
 
 	}

@@ -80,14 +80,15 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "ctrl+g":
 
 			if m.current != nil {
-				result, found := get_link_data(m.current)
+				result, err := get_link_data(m.current)
 
-				if found {
-					m.result = &result
+				if err != nil {
+					m.errMessage = err.Error()
+					m.result = nil
+					break
+
 				} else {
-					m.result = &link_data{
-						switch_name: "NOT FOUND",
-					}
+					m.result = &result
 				}
 			}
 
@@ -97,7 +98,12 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "ctrl+s":
 
 			if m.result != nil {
-				save_link_data(m.result)
+				err := save_link_data(m.result)
+				if err != nil {
+					m.errMessage = err.Error()
+					m.result = nil
+					break
+				}
 			}
 
 		case "ctrl+h":
