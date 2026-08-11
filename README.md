@@ -7,9 +7,13 @@ Here is Chris Hall's github thanks to him for this kind of idea [https://github.
 - There is however a tui (Bubbletea).
 - pkexec works for Linux.
 
-### **IMPORTANT Regarding root priliviages:**
+## **IMPORTANT - Regarding root priliviages:**
 - There is now a helper function where pkexec is called for this, this should work for Linux operating systems and now the whole program doesn't need root.
 - On Microsoft Windows running in this in the admin cmd/powershell is best since IPC for Windows is subideal.
+
+## IMPORTANT - Regarding Windows Pcap
+- Npcap must be installed to run the program 
+- a way to do this is to install wireshark with install Npcap option checked with when Npcap installer appears check the box Install Npcap in WinPcap API-compatible Mode.
 
 # How to build and run:
 ### On Windows:
