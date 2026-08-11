@@ -2,18 +2,21 @@ package main
 
 import (
 	"bufio"
-	"embed"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"net"
 	"os"
 	"os/exec"
+	"runtime"
 	"strings"
+	"time"
 
-	"github.com/wailsapp/wails/v2"
-	"github.com/wailsapp/wails/v2/pkg/options"
-	"github.com/wailsapp/wails/v2/pkg/options/assetserver"
+	tea "github.com/charmbracelet/bubbletea"
+	"github.com/google/gopacket"
+	"github.com/google/gopacket/layers"
+	"github.com/google/gopacket/pcap"
 )
 
 type connect_struct struct {
@@ -30,7 +33,6 @@ type valid_iface struct {
 	is_running bool
 	iface      *net.Interface
 }
-
 
 type LinkDataHelperForPackets struct {
 	SwitchName    string `json:"switch_name"`
@@ -53,93 +55,157 @@ type link_data struct {
 	duplex_option   string
 	vpt_mgmt_domain string
 	protocol        string
-	//stacked			bool
-	//member			int
+
+	stack_type 	string
+	stack		bool
+	member		int
 }
 
-//go:embed all:frontend/dist
-var assets embed.FS
-
 func main() {
-	// Create an instance of the app structure
-	app := NewApp()
 
-	// Create application with options
-	err := wails.Run(&options.App{
-		Title:  "Link Discovery Client for Linux",
-		Width:  850,
-		Height: 500,
-		AssetServer: &assetserver.Options{
-			Assets: assets,
-		},
-		BackgroundColour: &options.RGBA{R: 27, G: 38, B: 54, A: 1},
-		OnStartup:        app.startup,
-		Bind: []interface{}{
-			app,
-		},
-	})
+	if runtime.GOOS == "windows" {
+		if !win_isAdmin() {
+			log.Fatal("Please run this application from an Administrator PowerShell/CMD window.")
+		}
 
-	if err != nil {
-		println("Error:", err.Error())
+	}
+
+	connections := get_connection_data()
+
+	p := tea.NewProgram(
+		initialModel(connections),
+		tea.WithAltScreen(),
+	)
+	if _, err := p.Run(); err != nil {
+		fmt.Printf("Alas, there's been an error: %v", err)
+		os.Exit(1)
 	}
 }
 
-func get_link_data(connection *connect_struct) link_data {
+// Void
+func save_link_data(data *link_data) error {
+	var err error = nil
+	if data == nil {
+		// Tui message pottentially
+		err = errors.New("No link data is put")
+		return err
+	}
+	curr_time := time.DateTime
+
+	file, err := os.Create("LinkData_" + curr_time + ".txt")
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+	_, err = file.WriteString("Switch name: " + (*data).switch_name + "\n" +
+		"Port Identifier: " + (*data).port_id + "\n" +
+		"Vlan Identifier: " + (*data).vlan_id + "\n" +
+		"Switch Ip Address: " + (*data).switch_ip + "\n" +
+		"Switch model: " + (*data).switch_model + "\n" +
+		"Port Identifier: " + (*data).duplex_option + "\n" +
+		"Port Identifier: " + (*data).vpt_mgmt_domain + "\n")
+	return err
+
+}
+
+func get_link_data(connection *connect_struct) (link_data, error) {
 
 	var link link_data
 
 	var device_argument string
-
-	device_argument = (*(*connection).iface).Name
-
-	device_argument = (*(*connection).iface).Name
-
-	home := os.Getenv("HOME")
-
-	cmd := exec.Command(
-		"pkexec",
-		home + "/personal/ldlinux/helper/helper",
-		device_argument,
-	)
-
-	stdout, err := cmd.StdoutPipe()
-	if err != nil {
-		log.Fatal("Pipe failed")
-	}
-	err = cmd.Start()
-	if err != nil {
-		log.Fatal("Command not executed")
-	}
-
-
-	scanner := bufio.NewScanner(stdout)
-
-	var line string 
-	for scanner.Scan() {
-		line = scanner.Text()
-
-		var result LinkDataHelperForPackets
-
-		err := json.Unmarshal([]byte(line), &result)
-	
+	if runtime.GOOS == "windows" {
+		device, err := windows_pcap_translate(connection.iface.Name)
 		if err != nil {
-			continue
+			return link, err
+		}
+		var handle *pcap.Handle
+
+		handle, err = pcap.OpenLive(device, 1600, true, 1)
+		if err != nil {
+			return link, err
+		}
+		defer handle.Close()
+
+		err = handle.SetBPFFilter(
+			"(ether proto 0x88cc) or " +
+				"(ether[12:2] <= 1500 and ether[14:1] == 0xaa and ether[15:1] == 0xaa and ether[16:1] == 0x03 and ether[20:2] == 0x2000)",
+		)
+
+		if err != nil {
+			return link, err
 		}
 
-		link.connection = connection
-		link.switch_name = result.SwitchName
-		link.switch_model = result.SwitchModel
-		link.port_id = result.PortID
-		link.switch_ip = result.SwitchIP
-		link.vlan_id = result.VlanID
-		link.vpt_mgmt_domain = result.VptMgmtDomain
-		link.duplex_option = result.DuplexOption
-		link.protocol = result.Protocol
+		var packet_source *gopacket.PacketSource
+		timeout := time.After(time.Minute)
 
+		packet_source = gopacket.NewPacketSource(handle, handle.LinkType())
+		for {
+			select {
+			case packet := <-packet_source.Packets():
+				if cdp := packet.Layer(layers.LayerTypeCiscoDiscovery); cdp != nil {
+					link = get_cdp(cdp, connection)
+				}
+				if lldp := packet.Layer(layers.LayerTypeLinkLayerDiscovery); lldp != nil {
+					link = get_lldp(lldp, connection)
+				}
+
+			case <-timeout:
+				err = errors.New("Timeout")
+				return link, err
+			}
+
+		}
+
+	} else {
+
+		device_argument = (*(*connection).iface).Name
+
+		home := os.Getenv("HOME")
+
+		cmd := exec.Command(
+			"pkexec",
+			home+"/ldlinux/helper/helper",
+			device_argument,
+		)
+
+		stdout, err := cmd.StdoutPipe()
+		if err != nil {
+			return link, err
+		}
+		err = cmd.Start()
+		if err != nil {
+			return link, err
+		}
+
+		scanner := bufio.NewScanner(stdout)
+
+		var line string
+		for scanner.Scan() {
+			line = scanner.Text()
+
+			var result LinkDataHelperForPackets
+
+			err := json.Unmarshal([]byte(line), &result)
+
+			if err != nil {
+				fmt.Printf("JSON ERROR: %v\n", err)
+				continue
+			}
+
+			link.connection = connection
+			link.switch_name = result.SwitchName
+			link.switch_model = result.SwitchModel
+			link.port_id = result.PortID
+			link.switch_ip = result.SwitchIP
+			link.vlan_id = result.VlanID
+			link.vpt_mgmt_domain = result.VptMgmtDomain
+			link.duplex_option = result.DuplexOption
+			link.protocol = result.Protocol
+			break
+		}
+		cmd.Process.Kill()
 	}
-
-
-	return link
+	return link, nil
 }
 
 // Excludes wireless for Windows and Linux however I mean its not like wireless works for switches anyway
@@ -158,21 +224,23 @@ func exclude_wireless(iface net.Interface) bool {
 
 func ethernet_checker(ifaces []net.Interface) []valid_iface {
 	var valid []valid_iface
-	for _, v := range ifaces {
-		var mock_valid valid_iface
 
-		if v.Flags&net.FlagUp > 0 &&
-			len(v.HardwareAddr) > 0 &&
-			v.Flags&net.FlagLoopback == 0 &&
-			exclude_wireless(v) {
-			mock_valid.iface = &v
-			if v.Flags&net.FlagRunning > 0 {
-				mock_valid.is_running = true
-				valid = append(valid, mock_valid)
-			} else {
-				valid = append(valid, mock_valid)
+	for i := range ifaces {
+		iface := &ifaces[i]
 
+		if iface.Flags&net.FlagUp > 0 &&
+			len(iface.HardwareAddr) > 0 &&
+			iface.Flags&net.FlagLoopback == 0 &&
+			exclude_wireless(*iface) {
+			mockValid := valid_iface{
+				iface: iface,
 			}
+
+			if iface.Flags&net.FlagRunning > 0 {
+				mockValid.is_running = true
+			}
+
+			valid = append(valid, mockValid)
 		}
 	}
 
@@ -180,7 +248,7 @@ func ethernet_checker(ifaces []net.Interface) []valid_iface {
 }
 
 func get_connection_data() []connect_struct {
-	// Get the Network card - implenentation needed
+	// Get the Network card - implementation needed
 
 	var connections []connect_struct
 	var info connect_struct = connect_struct{
@@ -244,9 +312,6 @@ func get_connection_data() []connect_struct {
 			break
 
 		}
-		// if strings.HasPrefix(ip.String(), "192.168") {
-		// 	ipv4_str
-		// }
 
 		info.id = count + 1
 		info.name = fmt.Sprintf("Ethernet %d", count)

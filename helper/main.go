@@ -6,7 +6,6 @@ import (
 	"log"
 	"net"
 	"os"
-	"strings"
 	"time"
 
 	"github.com/google/gopacket"
@@ -31,57 +30,20 @@ func main() {
 	}
 
 	device_args := os.Args[1]
-	if strings.Contains(device_args ,"[windows]") && (strings.Contains(device_args, "{") && strings.Contains(device_args, "}")) {
-		start := strings.Index(device_args, "{")
-		end := strings.Index(device_args, "}")
 
-		if start != -1 && end != -1 && end > start {
-			result := device_args[start : end+1]
-			device, err := windows_pcap_translate(result)
-			if err != nil {
-				log.Fatal("Failed to retrieve device name for the Windows device")
-			}
-			admin_helper(device)
-		} else {
-			log.Fatalln("Argument error, error regarding the network interface name")
-		}
-		 
-	} else {
-		admin_helper(device_args)
-	}
+	admin_helper(device_args)
 }
 
+func admin_helper(device string) error {
 
-func windows_pcap_translate(iface_name string) (string, error) {
-
-	// Find all devices
-	devs, err := pcap.FindAllDevs()
-	if err != nil {
-		return "", err
-	}
-
-	for _, device := range devs {
-		if strings.Contains(strings.ToLower(device.Description),
-			strings.ToLower(iface_name),
-		) {
-			return device.Name, nil
-		}
-
-	}
-	return "", fmt.Errorf("No pcap device found!")
-}
-
-
-func admin_helper(device string)  {
-
-	var err error
+	var err error = nil
 	var handle *pcap.Handle
 
-	var link LinkDataHelperForPackets 
+	var link LinkDataHelperForPackets
 
 	handle, err = pcap.OpenLive(device, 1600, true, 1)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 	defer handle.Close()
 
@@ -91,7 +53,7 @@ func admin_helper(device string)  {
 	)
 
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	var packet_source *gopacket.PacketSource
@@ -101,6 +63,7 @@ func admin_helper(device string)  {
 	for {
 		select {
 		case packet := <-packet_source.Packets():
+
 			if cdp := packet.Layer(layers.LayerTypeCiscoDiscovery); cdp != nil {
 				link = get_cdp(cdp)
 				jsonData, err := json.Marshal(link)
@@ -108,18 +71,21 @@ func admin_helper(device string)  {
 					continue
 				}
 				fmt.Println(string(jsonData))
+				return nil
 			}
 			if lldp := packet.Layer(layers.LayerTypeLinkLayerDiscovery); lldp != nil {
+
 				link = get_lldp(lldp)
 				jsonData, err := json.Marshal(link)
 				if err != nil {
 					continue
 				}
 				fmt.Println(string(jsonData))
+				return nil
 			}
 
 		case <-timeout:
-			log.Fatal("Waited too long")
+			return fmt.Errorf("Timeout exceeded")
 		}
 
 	}
@@ -137,7 +103,6 @@ func get_lldp(lldp_layer gopacket.Layer) LinkDataHelperForPackets {
 		"",
 		"LLDP",
 	}
-
 
 	lldp := lldp_layer.(*layers.LinkLayerDiscovery)
 	for _, v := range lldp.Values {
@@ -175,7 +140,6 @@ func get_cdp(cdp_layer gopacket.Layer) LinkDataHelperForPackets {
 		"CDP",
 	}
 
-
 	cdp := cdp_layer.(*layers.CiscoDiscovery)
 	for _, v := range cdp.Values {
 		switch v.Type {
@@ -195,7 +159,7 @@ func get_cdp(cdp_layer gopacket.Layer) LinkDataHelperForPackets {
 				cdp_link_data.SwitchIP = ipv4.String()
 			}
 		case layers.CDPTLVPlatform:
-			cdp_link_data.SwitchName = string(v.Value)
+			cdp_link_data.SwitchModel = string(v.Value)
 		case layers.CDPTLVFullDuplex:
 			cdp_link_data.DuplexOption = string(v.Value)
 		case layers.CDPTLVVTPDomain:
