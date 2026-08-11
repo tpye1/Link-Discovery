@@ -52,6 +52,9 @@ func get_lldp(lldp_layer gopacket.Layer, connection *connect_struct) link_data {
 		"",
 		"",
 		"LLDP",
+		"",
+		false,
+		0,
 	}
 
 	lldp := lldp_layer.(*layers.LinkLayerDiscovery)
@@ -89,6 +92,9 @@ func get_cdp(cdp_layer gopacket.Layer, connection *connect_struct) link_data {
 		"",
 		"",
 		"CDP",
+		"",
+		false,
+		0,
 	}
 
 	cdp := cdp_layer.(*layers.CiscoDiscovery)
