@@ -11,6 +11,17 @@ Here is Chris Hall's github thanks to him for this kind of idea [https://github.
 - There is now a helper function where pkexec is called for this, this should work for Linux operating systems and now the whole program doesn't need root.
 - On Microsoft Windows running in this in the admin cmd/powershell is best since IPC for Windows is subideal.
 
+# How to build and run:
+### On Windows:
+- Go into the root of the repository and run ``$ go build .`` 
+- Then run in admin terminal (cmd or powershell): ``$ .\ldlinux.exe ``
+
+### On Linux:
+- Go into the root of the repository and run ``$ go build .``
+- Then in the helper folder run ``$ go build .``
+- Then go back to the root of the repository and run ``$ ./ldlinux``
+
+
 ### Contributors
 - Contributors would be nice particularly those who know the Go language.
 

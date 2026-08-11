@@ -55,8 +55,10 @@ type link_data struct {
 	duplex_option   string
 	vpt_mgmt_domain string
 	protocol        string
-	//stacked	bool
-	//member	int
+
+	stack_type 	string
+	stack		bool
+	member		int
 }
 
 func main() {
@@ -186,7 +188,7 @@ func get_link_data(connection *connect_struct) (link_data, error) {
 			err := json.Unmarshal([]byte(line), &result)
 
 			if err != nil {
-				fmt.Errorf("JSON ERROR: %v\n", err)
+				fmt.Printf("JSON ERROR: %v\n", err)
 				continue
 			}
 
