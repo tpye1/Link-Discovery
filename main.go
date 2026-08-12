@@ -142,11 +142,9 @@ func get_link_data(connection *connect_struct) (link_data, error) {
 		timeout := time.After(time.Minute)
 
 		packet_source = gopacket.NewPacketSource(handle, handle.LinkType())
-		fmt.Println("Waiting for LLDP/CDP packets...")
 		for {
 			select {
 			case packet := <-packet_source.Packets():
-				fmt.Println("Packet recieved")
 				if cdp := packet.Layer(layers.LayerTypeCiscoDiscovery); cdp != nil {
 					link = get_cdp(cdp, connection)
 				}
