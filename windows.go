@@ -29,6 +29,19 @@ func windows_pcap_translate(iface_name string) (string, error) {
 		return "", err
 	}
 
+	fmt.Println("INTERFACES:")
+	for _, iface := range ifaces {
+	    fmt.Printf("Name=%s MAC=%s\n",
+		iface.Name,
+		iface.HardwareAddr)
+	}
+
+	fmt.Println("PCAP DEVICES:")
+	for _, dev := range devs {
+	    fmt.Printf("Name=%s Desc=%s\n",
+		dev.Name,
+		dev.Description)
+	}
 	for _, device := range devs {
 		if strings.Contains(strings.ToLower(device.Description),
 			strings.ToLower(iface_name),
