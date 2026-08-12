@@ -5,6 +5,7 @@ package main
 import (
 	"fmt"
 	"net"
+	"strings"
 
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/layers"
@@ -20,20 +21,27 @@ func win_isAdmin() bool {
 
 }
 
-func windows_pcap_translate(iface_name string) (string, error) {
+func windows_pcap_translate() (string, error) {
     devs, err := pcap.FindAllDevs()
     if err != nil {
         return "", err
     }
 
     for _, device := range devs {
+        desc := strings.ToLower(device.Description)
+
+        if strings.Contains(desc, "wan miniport") {
+            continue
+        }
+
         if device.Name == `\Device\NPF_Loopback` {
             continue
         }
+
         return device.Name, nil
     }
 
-    return "", fmt.Errorf("no usable pcap")
+    return "", fmt.Errorf("no usable pcap device found")
 }
 
 func get_lldp(lldp_layer gopacket.Layer, connection *connect_struct) link_data {

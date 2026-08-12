@@ -332,7 +332,7 @@ func get_connection_data() []connect_struct {
 		}
 		info.iface = v.iface
 		if runtime.GOOS == "windows" {
-			pcap_device, err := windows_pcap_translate(v.iface.Name)
+			pcap_device, err := windows_pcap_translate()
 			if err == nil {
 				info.pcap_device = pcap_device
 			}

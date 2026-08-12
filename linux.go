@@ -18,9 +18,9 @@ func relaunchAsAdmin() error {
 	return nil
 }
 
-func windows_pcap_translate(iface_name string) (string, error) {
+func windows_pcap_translate() (string, error) {
 
-	return iface_name, nil
+	return "", nil
 }
 
 func get_lldp(lldp_layer gopacket.Layer, connection *connect_struct) link_data {
