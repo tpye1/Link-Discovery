@@ -5,7 +5,6 @@ package main
 import (
 	"fmt"
 	"net"
-	"strings"
 
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/layers"
@@ -22,35 +21,19 @@ func win_isAdmin() bool {
 }
 
 func windows_pcap_translate(iface_name string) (string, error) {
+    devs, err := pcap.FindAllDevs()
+    if err != nil {
+        return "", err
+    }
 
-	// Find all devices
-	devs, err := pcap.FindAllDevs()
-	if err != nil {
-		return "", err
-	}
+    for _, device := range devs {
+        if device.Name == `\Device\NPF_Loopback` {
+            continue
+        }
+        return device.Name, nil
+    }
 
-	fmt.Println("INTERFACES:")
-	for _, iface := range ifaces {
-	    fmt.Printf("Name=%s MAC=%s\n",
-		iface.Name,
-		iface.HardwareAddr)
-	}
-
-	fmt.Println("PCAP DEVICES:")
-	for _, dev := range devs {
-	    fmt.Printf("Name=%s Desc=%s\n",
-		dev.Name,
-		dev.Description)
-	}
-	for _, device := range devs {
-		if strings.Contains(strings.ToLower(device.Description),
-			strings.ToLower(iface_name),
-		) {
-			return device.Name, nil
-		}
-
-	}
-	return "", fmt.Errorf("No pcap device found!")
+    return "", fmt.Errorf("no usable pcap")
 }
 
 func get_lldp(lldp_layer gopacket.Layer, connection *connect_struct) link_data {
