@@ -27,6 +27,7 @@ type connect_struct struct {
 	status       bool
 	ip_addr      string
 	iface        *net.Interface
+	pcap_device  string
 }
 
 type valid_iface struct {
@@ -111,15 +112,16 @@ func save_link_data(data *link_data) error {
 func get_link_data(connection *connect_struct) (link_data, error) {
 
 	var link link_data
+	var err error = nil
 
 	var device_argument string
 	if runtime.GOOS == "windows" {
-		device, err := windows_pcap_translate(connection.iface.Name)
-		if err != nil {
-			return link, err
-		}
 		var handle *pcap.Handle
 
+		device := connection.pcap_device
+		if device == "" {
+			return link, fmt.Errorf("No pcap device accociated with interface")
+		}
 		handle, err = pcap.OpenLive(device, 1600, true, 1)
 		if err != nil {
 			return link, err
@@ -324,7 +326,12 @@ func get_connection_data() []connect_struct {
 			// Return the structure
 		}
 		info.iface = v.iface
-
+		if runtime.GOOS == "windows" {
+			pcap_device, err := windows_pcap_translate(v.iface.Name)
+			if err == nil {
+				info.pcap_device = pcap_device
+			}
+		}
 		connections = append(connections, info)
 		count++
 	}
