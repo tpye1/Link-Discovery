@@ -123,7 +123,6 @@ func get_link_data(connection *connect_struct) (link_data, error) {
 			return link, fmt.Errorf("No pcap device accociated with interface")
 		}
 		handle, err = pcap.OpenLive(device, 1600, true, 1)
-		fmt.Printf("Opened device: %s\n", device)
 		if err != nil {
 			return link, err
 		}

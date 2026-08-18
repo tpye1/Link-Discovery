@@ -1,6 +1,6 @@
 # Hello here is Link Discovery Layer for Linux (inspired by LDWin from Chris Hall)
 
-Here is Chris Hall's github thanks to him for this kind of idea [https://github.com/chall32](click here)
+Here is Chris Hall's github thanks to him for this kind of idea [click here](https://github.com/chall32)
 
 ## Hi so this kind of works so here is what is happening.
 - There is no stacking switches just yet. 
